@@ -8,7 +8,10 @@ from cnn_data_loader import get_data_loaders
 from scripts.cnn_model import SimpleCNN
 
 def train_cnn(data_dir, model_save_path, num_epochs=25, batch_size=32, learning_rate=0.001, img_size=224):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if not torch.cuda.is_available():
+        raise RuntimeError("GPU not available. This script requires a GPU to run.")
+    
+    device = torch.device("cuda")
     print(f"Using device: {device}")
 
     train_loader, val_loader = get_data_loaders(data_dir, batch_size, img_size)
