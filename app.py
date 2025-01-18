@@ -4,22 +4,42 @@ import torch
 import torchvision.transforms as transforms
 from PIL import Image
 import numpy as np
-
+import requests
+import tempfile
+import os
 
 # ----------------- Classification Models -----------------
 
+def download_model(model_url):
+    """
+    Downloads the model from the specified URL and saves it to a temporary file.
+    
+    Returns:
+        str: Path to the downloaded temporary model file.
+    """
+    response = requests.get(model_url)
+    response.raise_for_status()  # Ensure the request was successful
+    temp_dir = tempfile.gettempdir()
+    model_filename = os.path.basename(model_url)
+    temp_path = os.path.join(temp_dir, model_filename)
+    with open(temp_path, 'wb') as f:
+        f.write(response.content)
+    return temp_path
+
 @st.cache_resource
-def load_cnn_model(model_path):
+def load_cnn_model(model_url):
     from scripts.cnn_model import SimpleCNN
+    model_path = download_model(model_url)
     model = SimpleCNN(num_classes=3)
     model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
     model.eval()
     return model
 
 @st.cache_resource
-def load_alexnet_model(model_path):
+def load_alexnet_model(model_url):
     from torchvision import models
     import torch.nn as nn
+    model_path = download_model(model_url)
     model = models.alexnet(pretrained=False)
     num_ftrs = model.classifier[6].in_features
     model.classifier[6] = nn.Linear(num_ftrs, 3)
@@ -29,6 +49,7 @@ def load_alexnet_model(model_path):
 
 # ----------------- YOLOv8 Model -----------------
 
+# Uncomment and modify if you decide to use YOLOv8 in the future
 # @st.cache_resource
 # def load_yolov8_model(model_path):
 #     from ultralytics import YOLO  # Import moved here
@@ -38,9 +59,15 @@ def load_alexnet_model(model_path):
 # ----------------- Load All Models -----------------
 
 def load_all_models():
-    cnn_model = load_cnn_model('models/cnn_best.pth')
-    alexnet_model = load_alexnet_model('models/alexnet_best.pth')
-    # yolov8_model = load_yolov8_model('models/yolov8_best.pt')
+    base_url = "https://rpalphastorage.blob.core.windows.net/models/"
+    cnn_url = base_url + 'cnn_best.pth'
+    alexnet_url = base_url + 'alexnet_best.pth'
+    # yolov8_url = base_url + 'yolov8_best.pt'
+    
+    cnn_model = load_cnn_model(cnn_url)
+    alexnet_model = load_alexnet_model(alexnet_url)
+    # yolov8_model = load_yolov8_model(yolov8_url)
+    
     # return cnn_model, alexnet_model, yolov8_model
     return cnn_model, alexnet_model
 
