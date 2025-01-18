@@ -5,7 +5,7 @@ import torch.optim as optim
 from tqdm import tqdm
 import os
 from cnn_data_loader import get_data_loaders
-from cnn_model import SimpleCNN
+from scripts.cnn_model import SimpleCNN
 
 def train_cnn(data_dir, model_save_path, num_epochs=25, batch_size=32, learning_rate=0.001, img_size=224):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

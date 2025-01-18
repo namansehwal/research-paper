@@ -1,9 +1,10 @@
 # scripts/data_augmentation.py
 import os
-import shutil
 from albumentations import (
-    Compose, HorizontalFlip, VerticalFlip, Rotate, RandomBrightnessContrast,
-    ShiftScaleRotate, Blur, GaussNoise, HueSaturationValue
+    Compose, HorizontalFlip, VerticalFlip, Rotate,
+    ShiftScaleRotate, Blur, GaussNoise, ElasticTransform,
+    GridDistortion, OpticalDistortion, RandomCrop, Affine,
+    CLAHE, Emboss, Cutout, CoarseDropout, PadIfNeeded
 )
 from PIL import Image
 import numpy as np
@@ -42,17 +43,23 @@ def augment_images(input_dir, output_dir, augmentations, augment_factor=2):
 
 if __name__ == "__main__":
     input_directory = 'dataset/original'
-    augmented_directory = 'dataset/augmented'
+    augmented_directory = 'dataset/augmented/images'
 
     augmentation_pipeline = Compose([
         HorizontalFlip(p=0.5),
         VerticalFlip(p=0.5),
         Rotate(limit=40, p=0.7),
         ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=30, p=0.7),
-        RandomBrightnessContrast(p=0.5),
-        HueSaturationValue(p=0.5),
-        Blur(p=0.3),
-        GaussNoise(p=0.3),
+        Blur(blur_limit=3, p=0.3),
+        GaussNoise(var_limit=(10.0, 50.0), p=0.3),
+        ElasticTransform(alpha=1, sigma=50, alpha_affine=50, p=0.5),
+        GridDistortion(num_steps=5, distort_limit=0.3, p=0.3),
+        OpticalDistortion(distort_limit=0.5, shift_limit=0.5, p=0.3),
+        PadIfNeeded(min_height=256, min_width=256, border_mode=0, value=(0, 0, 0), p=1.0),
+        RandomCrop(height=256, width=256, p=0.5),
+        Affine(scale=(0.9, 1.1), shear=(10, 10), p=0.3),
+        CLAHE(clip_limit=4.0, p=0.3),
+        Emboss(alpha=(0.2, 0.5), strength=(0.5, 1.0), p=0.2)
     ])
 
-    augment_images(input_directory, augmented_directory, augmentation_pipeline, augment_factor=2)
+    augment_images(input_directory, augmented_directory, augmentation_pipeline, augment_factor=20)

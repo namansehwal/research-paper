@@ -4,14 +4,7 @@ import torch
 import torchvision.transforms as transforms
 from PIL import Image
 import numpy as np
-import os
-from ultralytics import YOLO
-import cv2
-import detectron2
-from detectron2.engine import DefaultPredictor
-from detectron2.config import get_cfg
-from detectron2 import model_zoo
-from detectron2.utils.visualizer import Visualizer
+
 
 # ----------------- Classification Models -----------------
 
@@ -38,20 +31,9 @@ def load_alexnet_model(model_path):
 
 @st.cache_resource
 def load_yolov8_model(model_path):
+    from ultralytics import YOLO  # Import moved here
     model = YOLO(model_path)
     return model
-
-# ----------------- Detectron2 Model -----------------
-
-@st.cache_resource
-def load_detectron2_model(config_path, model_weights):
-    cfg = get_cfg()
-    cfg.merge_from_file(model_zoo.get_config_file(config_path))
-    cfg.MODEL.WEIGHTS = model_weights
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold
-    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 3
-    predictor = DefaultPredictor(cfg)
-    return predictor
 
 # ----------------- Load All Models -----------------
 
@@ -59,11 +41,8 @@ def load_all_models():
     cnn_model = load_cnn_model('models/cnn_best.pth')
     alexnet_model = load_alexnet_model('models/alexnet_best.pth')
     yolov8_model = load_yolov8_model('models/yolov8_best.pt')
-    detectron2_predictor = load_detectron2_model(
-        config_path="COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml",
-        model_weights="models/detectron2_output/model_final.pth"
-    )
-    return cnn_model, alexnet_model, yolov8_model, detectron2_predictor
+
+    return cnn_model, alexnet_model, yolov8_model
 
 # ----------------- Helper Functions -----------------
 
@@ -93,7 +72,7 @@ def main():
 
     # Load models
     with st.spinner("Loading models..."):
-        cnn_model, alexnet_model, yolov8_model, detectron2_predictor = load_all_models()
+        cnn_model, alexnet_model, yolov8_model = load_all_models()
     st.success("Models loaded successfully!")
 
     # Image upload
@@ -120,14 +99,6 @@ def main():
         yolov8_results = yolov8_model(image)
         yolov8_annotated = yolov8_results[0].plot()
 
-        # Detectron2 Prediction
-        image_cv = np.array(image)
-        image_cv = image_cv[:, :, ::-1].copy()  # RGB to BGR
-        detectron2_outputs = detectron2_predictor(image_cv)
-        detectron2_v = Visualizer(image_cv[:, :, ::-1], MetadataCatalog.get("banana_train"))
-        detectron2_output = detectron2_v.draw_instance_predictions(detectron2_outputs["instances"].to("cpu"))
-        detectron2_annotated = detectron2_output.get_image()[:, :, ::-1]
-
         # Display Classification Results
         st.write("### Classification Results")
         col1, col2 = st.columns(2)
@@ -140,33 +111,10 @@ def main():
         st.write("### YOLOv8 Detection")
         st.image(yolov8_annotated, caption='YOLOv8 Detection', use_column_width=True)
 
-        # Display Detectron2 Results
-        st.write("### Detectron2 Detection")
-        st.image(detectron2_annotated, caption='Detectron2 Detection', use_column_width=True)
-
         # Optionally, display detection tables
         st.write("### YOLOv8 Detection Results")
         df_yolov8 = yolov8_results[0].pandas().xyxy[0]
         st.dataframe(df_yolov8)
-
-        st.write("### Detectron2 Detection Results")
-        instances = detectron2_outputs["instances"].to("cpu")
-        if len(instances) > 0:
-            detectron2_df = instances.get_fields()
-            # Create a simple dataframe with class names and confidence scores
-            detectron2_classes = [CLASS_NAMES[i] for i in instances.pred_classes]
-            detectron2_scores = instances.scores.tolist()
-            detectron2_boxes = instances.pred_boxes.tensor.numpy()
-            import pandas as pd
-            data = {
-                "Class": detectron2_classes,
-                "Confidence": detectron2_scores,
-                "Bounding Box": detectron2_boxes.tolist()
-            }
-            detectron2_df = pd.DataFrame(data)
-            st.dataframe(detectron2_df)
-        else:
-            st.write("No detections found.")
 
 if __name__ == "__main__":
     main()
