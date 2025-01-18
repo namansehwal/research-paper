@@ -29,20 +29,20 @@ def load_alexnet_model(model_path):
 
 # ----------------- YOLOv8 Model -----------------
 
-@st.cache_resource
-def load_yolov8_model(model_path):
-    from ultralytics import YOLO  # Import moved here
-    model = YOLO(model_path)
-    return model
+# @st.cache_resource
+# def load_yolov8_model(model_path):
+#     from ultralytics import YOLO  # Import moved here
+#     model = YOLO(model_path)
+#     return model
 
 # ----------------- Load All Models -----------------
 
 def load_all_models():
     cnn_model = load_cnn_model('models/cnn_best.pth')
     alexnet_model = load_alexnet_model('models/alexnet_best.pth')
-    yolov8_model = load_yolov8_model('models/yolov8_best.pt')
-
-    return cnn_model, alexnet_model, yolov8_model
+    # yolov8_model = load_yolov8_model('models/yolov8_best.pt')
+    # return cnn_model, alexnet_model, yolov8_model
+    return cnn_model, alexnet_model
 
 # ----------------- Helper Functions -----------------
 
@@ -72,7 +72,8 @@ def main():
 
     # Load models
     with st.spinner("Loading models..."):
-        cnn_model, alexnet_model, yolov8_model = load_all_models()
+        # cnn_model, alexnet_model, yolov8_model = load_all_models()
+        cnn_model, alexnet_model = load_all_models()
     st.success("Models loaded successfully!")
 
     # Image upload
@@ -95,9 +96,9 @@ def main():
         alexnet_pred = get_classification_prediction(alexnet_model, image_for_classification)
         alexnet_label = CLASS_NAMES[alexnet_pred]
 
-        # YOLOv8 Prediction
-        yolov8_results = yolov8_model(image)
-        yolov8_annotated = yolov8_results[0].plot()
+        # # YOLOv8 Prediction
+        # yolov8_results = yolov8_model(image)
+        # yolov8_annotated = yolov8_results[0].plot()
 
         # Display Classification Results
         st.write("### Classification Results")
@@ -107,14 +108,14 @@ def main():
         with col2:
             st.write("**AlexNet:**", alexnet_label)
 
-        # Display YOLOv8 Results
-        st.write("### YOLOv8 Detection")
-        st.image(yolov8_annotated, caption='YOLOv8 Detection', use_column_width=True)
+        # # Display YOLOv8 Results
+        # st.write("### YOLOv8 Detection")
+        # st.image(yolov8_annotated, caption='YOLOv8 Detection', use_column_width=True)
 
         # Optionally, display detection tables
-        st.write("### YOLOv8 Detection Results")
-        df_yolov8 = yolov8_results[0].pandas().xyxy[0]
-        st.dataframe(df_yolov8)
+        # st.write("### YOLOv8 Detection Results")
+        # df_yolov8 = yolov8_results[0].pandas().xyxy[0]
+        # st.dataframe(df_yolov8)
 
 if __name__ == "__main__":
     main()

@@ -15,3 +15,7 @@ streamlit==1.25.0
 
 # Utilities
 tqdm==4.65.0
+
+torch
+torchaudio
+torchvision
